@@ -34,30 +34,30 @@ RSpec.describe "partial_change matcher" do
   end
 
   it "fails when the 'from' value does not match the actual initial value" do
+    expect_text = /\{:a=>1, :b=>99, :c=>3\} to change from \{:b=>3\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>99\}/
     expect do
       expect do
         object[:b] = 99
       end.to partial_change(object, [:b]).from(b: 3).to(b: 99)
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError,
-                       /expected \{:a=>1, :b=>99, :c=>3\} to change from \{:b=>3\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>99\}/)
+    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
   end
 
   it "fails when the 'to' value does not match the actual final value" do
+    expect_text = /\{:a=>1, :b=>98, :c=>3\} to change from \{:b=>2\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>98\}/
     expect do
       expect do
         object[:b] = 98
       end.to partial_change(object, [:b]).from(b: 2).to(b: 99)
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError,
-                       /expected \{:a=>1, :b=>98, :c=>3\} to change from \{:b=>2\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>98\}/)
+    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
   end
 
   it "fails when an unchanged key is modified" do
+    expect_text = /\{:a=>100, :b=>99, :c=>3\} to change for keys \[:b\], but got \{:b=>2\} to \{:b=>99\}/
     expect do
       expect do
         object[:a] = 100
         object[:b] = 99
       end.to partial_change(object, [:b])
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError,
-                       /expected \{:a=>100, :b=>99, :c=>3\} to change for keys \[:b\], but got \{:b=>2\} to \{:b=>99\}/)
+    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
   end
 end

@@ -3,7 +3,7 @@
 require_relative "partial_change/version"
 
 module Rspec
-  # This RSpec matcher partial_change is designed to test if specific keys in a hash-like object have changed as expected.
+  # This RSpec matcher is designed to test if specific keys in a hash-like object have changed as expected.
   # It supports from and to chaining for asserting the exact values before and after the change,
   # but does not support usage with not_to.
   module PartialChange
