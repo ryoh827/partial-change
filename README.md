@@ -1,3 +1,14 @@
+> [!NOTE]
+> ⚠️ **This Gem is currently under development** ⚠️
+> 
+> This Gem is currently under development and may undergo disruptive changes in the future.   
+> It is not recommended for use in critical projects until a stable version is released.  
+> Also, please check back for updates as documentation and APIs are subject to change.  
+> 
+> **Current Constraints**:
+> - Some features are not yet implemented or incomplete.
+> - Unexpected bugs or defects may occur.
+
 # Rspec::PartialChange
 
 TODO: Delete this and the text below, and describe your gem
