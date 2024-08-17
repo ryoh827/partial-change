@@ -9,59 +9,59 @@ module Rspec
   module PartialChange
     extend RSpec::Matchers::DSL
 
-    RSpec::Matchers.define :partial_change do |object, changed_keys|
+    RSpec::Matchers.define :partial_change do |object, keys|
       supports_block_expectations
 
       match do |block|
-        @before = object.dup
+        @all_keys = extract_all_keys(object)
+        # オブジェクト全体の前の状態をディープコピーして保持
+        @before_state = deep_clone(object)
+
+        # 実行して変更を適用
         block.call
-        @after = object
 
-        @from_subset = @before.slice(*changed_keys)
-        @to_subset = @after.slice(*changed_keys)
+        # オブジェクト全体の後の状態をディープコピーして保持
+        @after_state = deep_clone(object)
 
-        unchanged_keys = @before.keys - changed_keys
+        # 差分がでているキーを探す
+        changed_keys = []
+        @all_keys.each do |key|
+          before_value = @before_state.dig(*key)
+          next if !keys.include?(key) && before_value.is_a?(Hash)
 
-        # Check that unchanged keys have not been modified
-        unchanged_keys_still_same = unchanged_keys.all? { |key| @before[key] == @after[key] }
+          changed_keys << key if @before_state.dig(*key) != @after_state.dig(*key)
+        end
 
-        # Check that the specified "from" subset matches the before state
-        from_matches = @from.nil? || @from_subset == @from
-
-        # Check that the specified "to" subset matches the after state
-        to_matches = @to.nil? || @to_subset == @to
-
-        unchanged_keys_still_same && from_matches && to_matches
+        # 差分がでているキーが指定されたキーと一致しているか
+        keys.sort == changed_keys.sort
       end
 
       match_when_negated do |_block|
-        raise NotImplementedError,
-              "The `partial_change` matcher does not support `not_to` usage. Please use it with `to`."
+        keys.none? do |key|
+          @before_state.dig(*key) != @after_state.dig(*key)
+        end
       end
 
-      chain :from do |before|
-        @from = before
+      chain :from do |expected|
+        @expected_from = expected
       end
 
-      chain :to do |after|
-        @to = after
+      chain :to do |expected|
+        @expected_to = expected
       end
 
-      failure_message do
-        messages = []
-        messages << "from #{@from}" if @from
-        messages << "to #{@to}" if @to
-        expected_change = messages.empty? ? "for keys #{changed_keys}" : messages.join(" ")
-
-        "expected #{object} to change #{expected_change}, but got #{@from_subset} to #{@to_subset}"
+      def extract_all_keys(hash, prefix = [])
+        keys = []
+        hash.each do |k, v|
+          full_key = prefix + [k]
+          keys << full_key
+          keys.concat(extract_all_keys(v, full_key)) if v.is_a?(Hash)
+        end
+        keys
       end
 
-      failure_message_when_negated do
-        "expected #{object} not to change for keys #{changed_keys}, but changes were detected."
-      end
-
-      def unchanged_keys
-        @before.keys
+      def deep_clone(obj)
+        Marshal.load(Marshal.dump(obj))
       end
     end
   end
