@@ -13,7 +13,7 @@ module Rspec
       supports_block_expectations
 
       match do |block|
-        @all_keys = extract_all_keys(object)
+        all_keys = extract_all_keys(object)
         # オブジェクト全体の前の状態をディープコピーして保持
         @before_state = deep_clone(object)
 
@@ -25,7 +25,7 @@ module Rspec
 
         # 差分がでているキーを探す
         changed_keys = []
-        @all_keys.each do |key|
+        all_keys.each do |key|
           before_value = @before_state.dig(*key)
           next if !keys.include?(key) && before_value.is_a?(Hash)
 
@@ -33,7 +33,13 @@ module Rspec
         end
 
         # 差分がでているキーが指定されたキーと一致しているか
-        keys.sort == changed_keys.sort
+        return false unless keys.sort == changed_keys.sort
+
+        # from と to が指定されている場合はそれに一致しているか
+        return false unless @expected_from && expected_from?
+        return false unless @expected_to && expected_to?
+
+        true
       end
 
       match_when_negated do |_block|
@@ -50,6 +56,22 @@ module Rspec
         @expected_to = expected
       end
 
+      def expected_from?
+        keys = extract_all_keys(@expected_from)
+
+        keys.all? do |key|
+          @before_state.dig(*key) == @expected_from.dig(*key)
+        end
+      end
+
+      def expected_to?
+        keys = extract_all_keys(@expected_to)
+
+        keys.all? do |key|
+          @after_state.dig(*key) == @expected_to.dig(*key)
+        end
+      end
+
       def extract_all_keys(hash, prefix = [])
         keys = []
         hash.each do |k, v|
@@ -57,7 +79,14 @@ module Rspec
           keys << full_key
           keys.concat(extract_all_keys(v, full_key)) if v.is_a?(Hash)
         end
-        keys
+
+        # 各配列を文字列として表現し、それをキーにしてグループ化
+        grouped_by_key = keys.group_by(&:itself)
+
+        # 最も深いネストを持つものを選ぶ
+        grouped_by_key.keys.reject do |key|
+          grouped_by_key.keys.any? { |other| other != key && other[0...key.size] == key }
+        end
       end
 
       def deep_clone(obj)
