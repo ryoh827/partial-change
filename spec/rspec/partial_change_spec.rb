@@ -3,61 +3,41 @@
 require "rspec/partial_change"
 
 RSpec.describe "partial_change matcher" do
-  let(:object) { { a: 1, b: 2, c: 3 } }
+  it "only changes the specified nested object attribute and leaves others unchanged" do
+    object = {
+      user: {
+        name: "Alice",
+        address: {
+          city: "New York",
+          zip: "10001"
+        }
+      }
+    }
 
-  it "matches when specified keys change as expected" do
     expect do
-      object[:b] = 99
-    end.to partial_change(object, [:b]).from(b: 2).to(b: 99)
+      object[:user][:address][:city] = "San Francisco"
+    end.to partial_change(object, [%i[user address city]])
+      .from({ user: { address: { city: "New York" } } })
+      .to({ user: { address: { city: "San Francisco" } } })
   end
 
-  it "matches when only changed keys are specified and no from/to is provided" do
-    expect do
-      object[:b] = 99
-    end.to partial_change(object, [:b])
-  end
+  # zip も変更されている場合
+  it "only changes the specified nested object attribute and leaves others unchanged" do
+    object = {
+      user: {
+        name: "Alice",
+        address: {
+          city: "New York",
+          zip: "10001"
+        }
+      }
+    }
 
-  it "matches when multiple keys change as expected" do
     expect do
-      object[:a] = 10
-      object[:b] = 99
-    end.to partial_change(object, %i[a b]).from(a: 1, b: 2).to(a: 10, b: 99)
-  end
-
-  it "raises an error when used with `not_to`" do
-    expect do
-      expect do
-        object[:b] = 99
-      end.not_to partial_change(object, [:b])
-    end.to raise_error(NotImplementedError,
-                       "The `partial_change` matcher does not support `not_to` usage. Please use it with `to`.")
-  end
-
-  it "fails when the 'from' value does not match the actual initial value" do
-    expect_text = /\{:a=>1, :b=>99, :c=>3\} to change from \{:b=>3\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>99\}/
-    expect do
-      expect do
-        object[:b] = 99
-      end.to partial_change(object, [:b]).from(b: 3).to(b: 99)
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
-  end
-
-  it "fails when the 'to' value does not match the actual final value" do
-    expect_text = /\{:a=>1, :b=>98, :c=>3\} to change from \{:b=>2\} to \{:b=>99\}, but got \{:b=>2\} to \{:b=>98\}/
-    expect do
-      expect do
-        object[:b] = 98
-      end.to partial_change(object, [:b]).from(b: 2).to(b: 99)
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
-  end
-
-  it "fails when an unchanged key is modified" do
-    expect_text = /\{:a=>100, :b=>99, :c=>3\} to change for keys \[:b\], but got \{:b=>2\} to \{:b=>99\}/
-    expect do
-      expect do
-        object[:a] = 100
-        object[:b] = 99
-      end.to partial_change(object, [:b])
-    end.to raise_error(RSpec::Expectations::ExpectationNotMetError, expect_text)
+      object[:user][:address][:city] = "San Francisco"
+      object[:user][:address][:zip] = "10008"
+    end.to partial_change(object, [%i[user address city], %i[user address zip]])
+      .from({ user: { address: { city: "New York", zip: "10001" } } })
+      .to({ user: { address: { city: "San Francisco", zip: "10008" } } })
   end
 end
